@@ -1,0 +1,5 @@
+*.dmp
+*.pyc
+art/*
+*.sublime-project
+*.sublime-workspace

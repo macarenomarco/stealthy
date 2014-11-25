@@ -1,0 +1,16 @@
+#:kivy 1.9.0
+
+<Player>:
+    size: 1, 1
+    canvas:
+        Rectangle:
+            pos: self.pos
+            source: 'player.png'
+            size: 20, 20
+
+<StealthyGame>:
+    player: player_avatar
+
+    Player:
+        id: player_avatar
+        center: self.parent.center
