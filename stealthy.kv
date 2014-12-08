@@ -3,11 +3,12 @@
 <Player>:
     pos: self.pos
     triangleImage: theImage
-
+    height: 10
+    width: 10
     Image:
         id: theImage
         source: 'player.png'
-        size: 15, 15
+        size: self.parent.size
         pos: self.parent.pos
         canvas.before:
             PushMatrix
@@ -28,11 +29,11 @@
         PushMatrix
         Rotate:
             axis: (0, 0, 1)
-            angle: self.parent.rotation
-            origin: self.center
+            angle: self.rotation
+            origin: self.rotcenter
     canvas:
         Line:
-            dash_offset: 1
+            points: self.points
     canvas.after:
         PopMatrix
 

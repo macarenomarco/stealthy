@@ -10,6 +10,19 @@ from kivy.vector import Vector
 from kivy.clock import Clock
 from kivy.graphics.vertex_instructions import Line
 
+class Bullet(Widget):
+
+    rotation = NumericProperty(0.0)
+
+    def __init__(self, shooter, length, **kwargs):
+        self.shooter = shooter
+        self.rotation = self.shooter.rotation
+        self.pos = self.shooter.center
+        self.points = [self.x, self.y, self.x + length, self.y]
+        self.rotcenter = [self.x, self.y]
+        super(Bullet, self).__init__(**kwargs)
+    
+
 class Player(Widget):
     triangleImage = ObjectProperty(None)
 
@@ -35,11 +48,9 @@ class Player(Widget):
 
     def __init__(self, **kwargs):
         super(Player, self).__init__(**kwargs)
-        # TODO: Create the movement binary vector, in order to know in which directions it's moving.
         self.state = [0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.rotation = 90.0
-        # self.mask_y = 0
-        # self.mask_x = 0
+        self.last_bullet = None
 
     def update(self):
         # Update x, y system
@@ -51,9 +62,11 @@ class Player(Widget):
         # Update rotation
         self.rotation = (self.rotation - (self.rotation_factor * self.state[Player.TURN_R]) + (self.rotation_factor * self.state[Player.TURN_L])) % 360
         self.center = [x, y]
+        if self.last_bullet:
+            self.remove_widget(self.last_bullet)
         if (self.state[Player.SHOOTING]):
-            with self.canvas:
-                Line(points=[self.x, self.y, x + self.direction_x, y + self.direction_y], width=1)
+            self.last_bullet = Bullet(self, 200)
+            self.add_widget(self.last_bullet)
         # Update the bulletLine
 
     def startMove(self, action):
