@@ -1,12 +1,41 @@
 #:kivy 1.9.0
 
 <Player>:
-    size: 1, 1
+    pos: self.pos
+    triangleImage: theImage
+
+    Image:
+        id: theImage
+        source: 'player.png'
+        size: 15, 15
+        pos: self.parent.pos
+        canvas.before:
+            PushMatrix
+            Rotate:
+                axis: (0, 0, 1)
+                angle: self.parent.rotation
+                origin: self.center
+        canvas:
+            Color:
+                rgba: 1,0,0,.5
+            Line:
+                rectangle: self.x, self.y, self.width, self.height
+        canvas.after:
+            PopMatrix
+
+<Bullet>:
+    canvas.before:
+        PushMatrix
+        Rotate:
+            axis: (0, 0, 1)
+            angle: self.parent.rotation
+            origin: self.center
     canvas:
-        Rectangle:
-            pos: self.pos
-            source: 'player.png'
-            size: 20, 20
+        Line:
+            dash_offset: 1
+    canvas.after:
+        PopMatrix
+
 
 <StealthyGame>:
     player: player_avatar

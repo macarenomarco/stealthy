@@ -8,55 +8,65 @@ from kivy.core.window import Window
 from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty
 from kivy.vector import Vector
 from kivy.clock import Clock
+from kivy.graphics.vertex_instructions import Line
 
 class Player(Widget):
+    triangleImage = ObjectProperty(None)
+
     direction_x = NumericProperty(0.0)
     direction_y = NumericProperty(0.0)
+    direction_i = NumericProperty(0.0)
+    direction_j = NumericProperty(0.0)
 
-    mask_x = NumericProperty(0)
-    mask_y = NumericProperty(0)
+    rotation = NumericProperty(0.0)
+    rotation_factor = NumericProperty(2.8)
 
-    rotation = NumericProperty(90.0)
-    rotation_factor = NumericProperty(5)
-
-    max_vel_coef = NumericProperty(.1)
+    max_vel_coef = NumericProperty(.07)
 
     direction = ReferenceListProperty(direction_x, direction_y)
-    mask = ReferenceListProperty(mask_x, mask_y)
 
+    FORWARD = 0
+    BACKWARD = 1
+    LEFT = 2
+    RIGHT = 3
+    TURN_R = 4
+    TURN_L = 5
+    SHOOTING = 6
 
     def __init__(self, **kwargs):
         super(Player, self).__init__(**kwargs)
         # TODO: Create the movement binary vector, in order to know in which directions it's moving.
+        self.state = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.rotation = 90.0
         # self.mask_y = 0
         # self.mask_x = 0
 
     def update(self):
-        self.center = (Vector(*self.direction) * [self.mask_x, self.mask_y]) + self.center
+        # Update x, y system
+        x = self.center[0] + (self.direction_x * -self.state[Player.BACKWARD]) + (self.direction_x * self.state[Player.FORWARD])
+        y = self.center[1] + (self.direction_y * -self.state[Player.BACKWARD]) + (self.direction_y * self.state[Player.FORWARD])
+        # Update i, j system
+        x += (self.direction_i * -self.state[Player.LEFT]) + (self.direction_i * self.state[Player.RIGHT])
+        y += (self.direction_j * -self.state[Player.LEFT]) + (self.direction_j * self.state[Player.RIGHT])
+        # Update rotation
+        self.rotation = (self.rotation - (self.rotation_factor * self.state[Player.TURN_R]) + (self.rotation_factor * self.state[Player.TURN_L])) % 360
+        self.center = [x, y]
+        if (self.state[Player.SHOOTING]):
+            with self.canvas:
+                Line(points=[self.x, self.y, x + self.direction_x, y + self.direction_y], width=1)
+        # Update the bulletLine
 
-    def forward(self):
-        self.mask_x = 1
-        self.mask_y = 1
+    def startMove(self, action):
+        self.state[action] = 1;
 
-    def backward(self):
-        self.mask_x = -1
-        self.mask_y = -1
-
-    def turnRight(self):
-        self.rotation = (self.rotation - self.rotation_factor) % 360
-
-    def turnLeft(self):
-        self.rotation = (self.rotation + self.rotation_factor) % 360
-
-    def strafeRight(self):
-        self.mask_x *= -1
-
-    def strafeLeft(self):
-        self.mask_y *= -1
+    def stopMove(self, action):
+        self.state[action] = 0;
 
     def on_rotation(self, instance, value):
-        self.direction_x = math.degrees(math.cos(math.radians(value))) * self.max_vel_coef * self.mask[0]
-        self.direction_y = math.degrees(math.sin(math.radians(value))) * self.max_vel_coef * self.mask[1]
+        self.direction_x = math.degrees(math.cos(math.radians(value))) * self.max_vel_coef
+        self.direction_y = math.degrees(math.sin(math.radians(value))) * self.max_vel_coef
+        self.direction_i = math.degrees(math.cos(math.radians(value - 90))) * self.max_vel_coef * .5
+        self.direction_j = math.degrees(math.sin(math.radians(value - 90))) * self.max_vel_coef * .5
 
 class StealthyGame(Widget):
 
@@ -77,31 +87,42 @@ class StealthyGame(Widget):
             self.app.stop()
         else:
             player_moves = {
-                "up": self.player.forward,
-                "down": self.player.backward,
-                "a": self.player.strafeLeft,
-                "d": self.player.strafeRight,
-                "left": self.player.turnLeft,
-                "right": self.player.turnRight
+                "up": lambda x: self.player.startMove(Player.FORWARD),
+                "down": lambda x: self.player.startMove(Player.BACKWARD),
+                "a": lambda x: self.player.startMove(Player.LEFT),
+                "d": lambda x: self.player.startMove(Player.RIGHT),
+                "left": lambda x: self.player.startMove(Player.TURN_L),
+                "right": lambda x: self.player.startMove(Player.TURN_R),
+                "spacebar": lambda x: self.player.startMove(Player.SHOOTING)
             }
             move = player_moves.get(keycode[1])
             if move:
-                move()
-                print(self.player.mask_x, self.player.mask_y)
+                move(0)
         return True
 
     def _on_keyboard_up(self, keyboard, keycode):
+        player_moves = {
+            "up": lambda x: self.player.stopMove(Player.FORWARD),
+            "down": lambda x: self.player.stopMove(Player.BACKWARD),
+            "a": lambda x: self.player.stopMove(Player.LEFT),
+            "d": lambda x: self.player.stopMove(Player.RIGHT),
+            "left": lambda x: self.player.stopMove(Player.TURN_L),
+            "right": lambda x: self.player.stopMove(Player.TURN_R),
+            "spacebar": lambda x: self.player.stopMove(Player.SHOOTING)
+        }
+        move = player_moves.get(keycode[1])
+        if move:
+            move(0)
         pass
 
     def update(self, dt):
-        print(self.player.mask_x, self.player.mask_y)
         self.player.update()
 
 class StealthyApp(App):
 
     def build(self):
         game = StealthyGame(self)
-        Clock.schedule_interval(game.update, 10.0/60.0)
+        Clock.schedule_interval(game.update, 1.0/60.0)
         return game
 
 
