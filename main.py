@@ -5,10 +5,12 @@ kivy.require('1.9.0') # replace with your current kivy version !
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.core.window import Window
-from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty
+from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty, ListProperty
 from kivy.vector import Vector
 from kivy.clock import Clock
 from kivy.graphics.vertex_instructions import Line
+
+from game import AttackAgent, World, Player
 
 class Bullet(Widget):
 
@@ -24,15 +26,13 @@ class Bullet(Widget):
     
 
 class Player(Widget):
-    triangleImage = ObjectProperty(None)
-
     direction_x = NumericProperty(0.0)
     direction_y = NumericProperty(0.0)
     direction_i = NumericProperty(0.0)
     direction_j = NumericProperty(0.0)
 
     rotation = NumericProperty(0.0)
-    rotation_factor = NumericProperty(2.8)
+    rotation_factor = NumericProperty(2)
 
     max_vel_coef = NumericProperty(.07)
 
@@ -81,15 +81,33 @@ class Player(Widget):
         self.direction_i = math.degrees(math.cos(math.radians(value - 90))) * self.max_vel_coef * .5
         self.direction_j = math.degrees(math.sin(math.radians(value - 90))) * self.max_vel_coef * .5
 
+class Agent(Player):
+
+    def __init__(self, ia,**kwargs):
+        super(Agent, self).__init__(**kwargs)
+        self.ia = ia
+
+    @override
+    def update(self):
+        self.ia.listen()
+        self.ia.see()
+
 class StealthyGame(Widget):
 
     player = ObjectProperty(None)
+
+    enemies = ListProperty()
 
     def __init__(self, app, **kwargs):
         super(StealthyGame, self).__init__(**kwargs)
         self.app = app
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down, on_key_up=self._on_keyboard_up)
+        e = Player()
+        e.center = [40, 40]
+        e.rotation = 45
+        self.add_widget(e)
+        self.enemies.append(e)
 
     def _keyboard_closed(self):
         self._keyboard.unbind(on_key_down=self._on_keyboard_down, on_key_up=self._on_keyboard_up)
